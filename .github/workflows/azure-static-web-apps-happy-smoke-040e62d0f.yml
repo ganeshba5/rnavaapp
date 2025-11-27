@@ -44,6 +44,20 @@ jobs:
             exit 1
           fi
           echo "Build output verified successfully"
+      - name: Verify environment variables in build
+        run: |
+          echo "Checking if Supabase URL is embedded in build..."
+          if grep -r "EXPO_PUBLIC_SUPABASE_URL" dist/ 2>/dev/null | head -1; then
+            echo "✅ Environment variables found in build"
+          else
+            echo "⚠️ Warning: Environment variables may not be embedded in build"
+            echo "This is normal if Expo inlines the values. Checking for actual Supabase URL..."
+            if grep -r "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" dist/ 2>/dev/null | head -1; then
+              echo "✅ Supabase URL found in build (values are inlined)"
+            else
+              echo "⚠️ Supabase URL not found in build - this may indicate an issue"
+            fi
+          fi
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get Id Token

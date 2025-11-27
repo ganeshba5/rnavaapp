@@ -28,6 +28,7 @@ jobs:
         run: |
           echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" >> .env.production
           echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env.production
+          echo "EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY }}" >> .env.production
         shell: bash
 
       - name: Build web app

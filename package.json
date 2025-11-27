@@ -10,7 +10,9 @@
     "web": "expo start --web",
     "ship:web": "bash ./scripts/ship-web.sh",
     "deploy:azure": "bash ./scripts/deploy-azure-blob.sh",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build": "echo 'Build completed in previous step'",
+    "build:azure": "echo 'Build completed in previous step'"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -39,13 +39,25 @@ set +u
 set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
+# Explicitly export the variables to ensure they're available to child processes
+export EXPO_PUBLIC_SUPABASE_URL
+export EXPO_PUBLIC_SUPABASE_ANON_KEY
+export EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
 set -u
 set +a
+
+# Verify environment variables are set
+if [ -z "${EXPO_PUBLIC_SUPABASE_URL:-}" ] || [ -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]; then
+  echo "[ship-web] ERROR: Required environment variables are not set!" >&2
+  echo "[ship-web] EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL:-NOT SET}" >&2
+  echo "[ship-web] EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY:+SET (hidden)}" >&2
+  exit 1
+fi
 
 info "Cleaning previous web build output"
 rm -rf "$DIST_DIR" "$ARCHIVE_PATH"
 
-info "Exporting optimized web bundle"
+info "Exporting optimized web bundle with environment variables"
 (cd "$PROJECT_ROOT" && npx expo export -p web --clear)
 
 if [ ! -d "$DIST_DIR" ]; then

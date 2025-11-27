@@ -1,0 +1,1461 @@
+openapi: 3.0.3
+info:
+  title: AVA Platform API
+  version: 1.0.0
+  description: |
+    REST API powering the AVA companion applications. The API provides authentication
+    and CRUD access to user, canine, veterinary, contact, nutrition, training, appointment,
+    and media resources. All protected endpoints require a bearer access token issued
+    via the authentication flow.
+  contact:
+    name: AVA Engineering
+    email: support@example.com
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+  - url: https://staging-api.example.com/v1
+    description: Staging
+tags:
+  - name: Auth
+    description: Authentication and session management
+  - name: Users
+  - name: Canines
+  - name: Vets
+  - name: Contacts
+  - name: Nutrition
+  - name: Training
+  - name: Appointments
+  - name: Media
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate a user
+      description: Exchange email and password credentials for an access token and current profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      description: Issue a new access token using a valid refresh token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Refresh token expired or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Invalidate the current session
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          description: Session already invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      description: |
+        Returns user profiles. Admins receive all users; other roles receive their profile only
+        unless additional policies apply.
+      parameters:
+        - in: query
+          name: role
+          schema:
+            $ref: '#/components/schemas/UserRole'
+          description: Filter by user role.
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          description: Filter by email address.
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserProfile'
+    post:
+      tags: [Users]
+      summary: Create a user
+      description: Admin-only endpoint to create a new user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreate'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Users]
+      summary: Update a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      responses:
+        '204':
+          description: User deleted
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /canines:
+    get:
+      tags: [Canines]
+      summary: List canine profiles
+      parameters:
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+          description: Filter by owning user ID.
+      responses:
+        '200':
+          description: List of canines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CanineProfile'
+    post:
+      tags: [Canines]
+      summary: Create a canine profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CanineProfileCreate'
+      responses:
+        '201':
+          description: Canine created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanineProfile'
+  /canines/{canineId}:
+    parameters:
+      - $ref: '#/components/parameters/CanineId'
+    get:
+      tags: [Canines]
+      summary: Get canine details
+      responses:
+        '200':
+          description: Canine profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanineProfile'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Canines]
+      summary: Update canine profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CanineProfileUpdate'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanineProfile'
+    delete:
+      tags: [Canines]
+      summary: Delete canine profile
+      responses:
+        '204':
+          description: Deleted
+  /vets:
+    get:
+      tags: [Vets]
+      summary: List vet profiles
+      responses:
+        '200':
+          description: List of vets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VetProfile'
+    post:
+      tags: [Vets]
+      summary: Create a vet profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VetProfileCreate'
+      responses:
+        '201':
+          description: Vet created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VetProfile'
+  /vets/{vetId}:
+    parameters:
+      - $ref: '#/components/parameters/VetId'
+    get:
+      tags: [Vets]
+      summary: Get vet profile
+      responses:
+        '200':
+          description: Vet profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VetProfile'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Vets]
+      summary: Update vet profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VetProfileUpdate'
+      responses:
+        '200':
+          description: Updated vet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VetProfile'
+    delete:
+      tags: [Vets]
+      summary: Delete vet profile
+      responses:
+        '204':
+          description: Deleted
+  /contacts:
+    get:
+      tags: [Contacts]
+      summary: List contacts
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+          description: Filter by owning user.
+      responses:
+        '200':
+          description: Contact list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contact'
+    post:
+      tags: [Contacts]
+      summary: Create a contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreate'
+      responses:
+        '201':
+          description: Contact created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+  /contacts/{contactId}:
+    parameters:
+      - $ref: '#/components/parameters/ContactId'
+    get:
+      tags: [Contacts]
+      summary: Get contact
+      responses:
+        '200':
+          description: Contact details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+    put:
+      tags: [Contacts]
+      summary: Update contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactUpdate'
+      responses:
+        '200':
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+    delete:
+      tags: [Contacts]
+      summary: Delete contact
+      responses:
+        '204':
+          description: Deleted
+  /nutrition:
+    get:
+      tags: [Nutrition]
+      summary: List nutrition entries
+      parameters:
+        - in: query
+          name: canineId
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Nutrition entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NutritionEntry'
+    post:
+      tags: [Nutrition]
+      summary: Create a nutrition entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NutritionEntryCreate'
+      responses:
+        '201':
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NutritionEntry'
+  /nutrition/{entryId}:
+    parameters:
+      - $ref: '#/components/parameters/NutritionId'
+    get:
+      tags: [Nutrition]
+      summary: Get nutrition entry
+      responses:
+        '200':
+          description: Nutrition entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NutritionEntry'
+    put:
+      tags: [Nutrition]
+      summary: Update nutrition entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NutritionEntryUpdate'
+      responses:
+        '200':
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NutritionEntry'
+    delete:
+      tags: [Nutrition]
+      summary: Delete nutrition entry
+      responses:
+        '204':
+          description: Deleted
+  /training:
+    get:
+      tags: [Training]
+      summary: List training logs
+      parameters:
+        - in: query
+          name: canineId
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Training logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingLog'
+    post:
+      tags: [Training]
+      summary: Create a training log
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingLogCreate'
+      responses:
+        '201':
+          description: Training log created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingLog'
+  /training/{logId}:
+    parameters:
+      - $ref: '#/components/parameters/TrainingId'
+    get:
+      tags: [Training]
+      summary: Get training log
+      responses:
+        '200':
+          description: Training log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingLog'
+    put:
+      tags: [Training]
+      summary: Update training log
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingLogUpdate'
+      responses:
+        '200':
+          description: Updated log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingLog'
+    delete:
+      tags: [Training]
+      summary: Delete training log
+      responses:
+        '204':
+          description: Deleted
+  /appointments:
+    get:
+      tags: [Appointments]
+      summary: List appointments
+      parameters:
+        - in: query
+          name: canineId
+          schema:
+            type: string
+        - in: query
+          name: vetId
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/AppointmentStatus'
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+    post:
+      tags: [Appointments]
+      summary: Schedule appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreate'
+      responses:
+        '201':
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+  /appointments/{appointmentId}:
+    parameters:
+      - $ref: '#/components/parameters/AppointmentId'
+    get:
+      tags: [Appointments]
+      summary: Get appointment
+      responses:
+        '200':
+          description: Appointment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+    put:
+      tags: [Appointments]
+      summary: Update appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentUpdate'
+      responses:
+        '200':
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+    delete:
+      tags: [Appointments]
+      summary: Cancel appointment
+      responses:
+        '204':
+          description: Deleted
+  /media:
+    get:
+      tags: [Media]
+      summary: List media items
+      parameters:
+        - in: query
+          name: canineId
+          schema:
+            type: string
+        - in: query
+          name: ownerId
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/MediaType'
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Media list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MediaItem'
+    post:
+      tags: [Media]
+      summary: Upload media metadata
+      description: Records metadata for uploaded media in storage. Actual binary upload occurs via signed URLs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaItemCreate'
+      responses:
+        '201':
+          description: Media metadata saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+  /media/{mediaId}:
+    parameters:
+      - $ref: '#/components/parameters/MediaId'
+    get:
+      tags: [Media]
+      summary: Get media metadata
+      responses:
+        '200':
+          description: Media metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+    delete:
+      tags: [Media]
+      summary: Delete media metadata and file
+      responses:
+        '204':
+          description: Deleted
+components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    CanineId:
+      name: canineId
+      in: path
+      required: true
+      schema:
+        type: string
+    VetId:
+      name: vetId
+      in: path
+      required: true
+      schema:
+        type: string
+    ContactId:
+      name: contactId
+      in: path
+      required: true
+      schema:
+        type: string
+    NutritionId:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        type: string
+    TrainingId:
+      name: logId
+      in: path
+      required: true
+      schema:
+        type: string
+    AppointmentId:
+      name: appointmentId
+      in: path
+      required: true
+      schema:
+        type: string
+    MediaId:
+      name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: invalid_credentials
+        message:
+          type: string
+          example: Email or password is incorrect.
+        details:
+          type: object
+          additionalProperties: true
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    LoginResponse:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserProfile'
+    UserRole:
+      type: string
+      enum: [Admin, Pet Owner, Vet, Dog Walker]
+    UserProfile:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+        - email
+        - role
+        - country
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        country:
+          type: string
+          enum: [US, India]
+        role:
+          $ref: '#/components/schemas/UserRole'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UserProfileCreate:
+      type: object
+      required: [firstName, lastName, email, role, password]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        country:
+          type: string
+          enum: [US, India]
+          default: US
+        role:
+          $ref: '#/components/schemas/UserRole'
+        password:
+          type: string
+          format: password
+    UserProfileUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        country:
+          type: string
+          enum: [US, India]
+        role:
+          $ref: '#/components/schemas/UserRole'
+        password:
+          type: string
+          format: password
+    CanineProfile:
+      type: object
+      required:
+        - id
+        - userId
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        breed:
+          type: string
+          nullable: true
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          type: string
+          enum: [Male, Female, Unknown]
+          nullable: true
+        weight:
+          type: number
+          format: float
+          nullable: true
+        weightUnit:
+          type: string
+          enum: [kg, lbs]
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        microchipNumber:
+          type: string
+          nullable: true
+        profilePhotoId:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CanineProfileCreate:
+      type: object
+      required: [userId, name]
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        breed:
+          type: string
+          nullable: true
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          type: string
+          enum: [Male, Female, Unknown]
+          nullable: true
+        weight:
+          type: number
+          format: float
+          nullable: true
+        weightUnit:
+          type: string
+          enum: [kg, lbs]
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        microchipNumber:
+          type: string
+          nullable: true
+        profilePhotoId:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    CanineProfileUpdate:
+      allOf:
+        - $ref: '#/components/schemas/CanineProfileCreate'
+      description: Fields are optional; only provided values are updated.
+    VetProfile:
+      type: object
+      required:
+        - id
+        - name
+        - phone
+        - country
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        clinicName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        zipCode:
+          type: string
+          nullable: true
+        country:
+          type: string
+          enum: [US, India]
+        specialization:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    VetProfileCreate:
+      type: object
+      required: [name, phone, country]
+      properties:
+        name:
+          type: string
+        clinicName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        zipCode:
+          type: string
+          nullable: true
+        country:
+          type: string
+          enum: [US, India]
+        specialization:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    VetProfileUpdate:
+      allOf:
+        - $ref: '#/components/schemas/VetProfileCreate'
+    Contact:
+      type: object
+      required:
+        - id
+        - name
+        - phone
+        - isEmergency
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        relationship:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        isEmergency:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ContactCreate:
+      type: object
+      required: [userId, name, phone, isEmergency]
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        relationship:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        isEmergency:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+    ContactUpdate:
+      allOf:
+        - $ref: '#/components/schemas/ContactCreate'
+    NutritionEntry:
+      type: object
+      required:
+        - id
+        - canineId
+        - date
+        - foodType
+        - foodName
+        - quantity
+        - unit
+        - calories
+      properties:
+        id:
+          type: string
+        canineId:
+          type: string
+        date:
+          type: string
+          format: date
+        foodType:
+          type: string
+        foodName:
+          type: string
+        quantity:
+          type: number
+          format: float
+        unit:
+          type: string
+          enum: [grams, cups, oz, pieces, ml, ounces]
+        calories:
+          type: integer
+          format: int32
+        addOns:
+          type: string
+        repeatDays:
+          type: integer
+          format: int32
+        actualDate:
+          type: string
+          format: date
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    NutritionEntryCreate:
+      type: object
+      required: [canineId, date, foodType, foodName, quantity, unit]
+      properties:
+        canineId:
+          type: string
+        date:
+          type: string
+          format: date
+        foodType:
+          type: string
+        foodName:
+          type: string
+        quantity:
+          type: number
+          format: float
+        unit:
+          type: string
+          enum: [grams, cups, oz, pieces, ml, ounces]
+        calories:
+          type: integer
+          format: int32
+        addOns:
+          type: string
+        repeatDays:
+          type: integer
+          format: int32
+        actualDate:
+          type: string
+          format: date
+        notes:
+          type: string
+          nullable: true
+    NutritionEntryUpdate:
+      allOf:
+        - $ref: '#/components/schemas/NutritionEntryCreate'
+    TrainingLog:
+      type: object
+      required:
+        - id
+        - canineId
+        - date
+        - skill
+        - success
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        canineId:
+          type: string
+        date:
+          type: string
+          format: date
+        skill:
+          type: string
+        duration:
+          type: integer
+          format: int32
+          nullable: true
+        success:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TrainingLogCreate:
+      type: object
+      required: [canineId, date, skill, success]
+      properties:
+        canineId:
+          type: string
+        date:
+          type: string
+          format: date
+        skill:
+          type: string
+        duration:
+          type: integer
+          format: int32
+          nullable: true
+        success:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+    TrainingLogUpdate:
+      allOf:
+        - $ref: '#/components/schemas/TrainingLogCreate'
+    AppointmentStatus:
+      type: string
+      enum: [Scheduled, Completed, Cancelled]
+    Appointment:
+      type: object
+      required:
+        - id
+        - canineId
+        - date
+        - type
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        canineId:
+          type: string
+        vetId:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          nullable: true
+        type:
+          type: string
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AppointmentCreate:
+      type: object
+      required: [canineId, date, type]
+      properties:
+        canineId:
+          type: string
+        vetId:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          pattern: '^[0-2][0-9]:[0-5][0-9]$'
+          nullable: true
+        type:
+          type: string
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+          default: Scheduled
+        notes:
+          type: string
+          nullable: true
+    AppointmentUpdate:
+      allOf:
+        - $ref: '#/components/schemas/AppointmentCreate'
+    MediaType:
+      type: string
+      enum: [photo, video]
+    MediaItem:
+      type: object
+      required:
+        - id
+        - canineId
+        - type
+        - uri
+        - date
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        canineId:
+          type: string
+        type:
+          $ref: '#/components/schemas/MediaType'
+        uri:
+          type: string
+          format: uri
+        caption:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MediaItemCreate:
+      type: object
+      required: [canineId, type, uri, date]
+      properties:
+        canineId:
+          type: string
+        type:
+          $ref: '#/components/schemas/MediaType'
+        uri:
+          type: string
+          format: uri
+        caption:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
